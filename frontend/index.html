@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Chat — Real-time Translate (Demo)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif; }
+    body { background:#e9edef; color:#111; }
+
+    .app {
+      max-width: 980px;
+      margin: 24px auto;
+      height: calc(100vh - 48px);
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .sidebar {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 20px rgba(8,15,20,0.06);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .brand { display:flex; align-items:center; gap:10px; }
+    .logo { width:44px; height:44px; border-radius:50%; background:#1aa3ff; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; }
+    .brand h2 { font-size:16px; }
+
+    .controls { display:flex; gap:8px; align-items:center; }
+    .controls input, .controls select {
+      padding:8px 10px; border:1px solid #e6e7ea; border-radius:8px; width:100%;
+      font-size:14px;
+    }
+
+    .rooms {
+      margin-top:8px;
+      overflow:auto;
+      flex:1;
+    }
+    .room {
+      padding:10px; border-radius:8px; display:flex; gap:10px; align-items:center; cursor:pointer;
+    }
+    .room:hover { background:#f7fbff; }
+    .room .av { width:36px; height:36px; border-radius:50%; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:600; }
+
+    .chat {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px;
+      display:flex; flex-direction:column;
+      box-shadow: 0 4px 20px rgba(8,15,20,0.06);
+    }
+    .chat-header {
+      display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
+    }
+    .chat-title { font-weight:700; font-size:18px; }
+
+    .chat-window {
+      background: linear-gradient(#fbfdff,#ffffff);
+      border-radius:8px;
+      padding:14px;
+      flex:1;
+      overflow:auto;
+      border:1px solid #f0f2f5;
+    }
+
+    .msg { display:flex; gap:10px; margin-bottom:12px; align-items:flex-end; }
+    .msg.me { flex-direction:row-reverse; }
+    .av { width:40px; height:40px; border-radius:50%; background:#cfe9ff; display:flex; align-items:center; justify-content:center; font-weight:600; color:#024; }
+
+    .bubble {
+      max-width:75%;
+      background:#f4f6f8;
+      padding:10px 12px;
+      border-radius:12px;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+      font-size:14px;
+      line-height:1.3;
+    }
+    .msg.me .bubble { background:#d1f0d6; color:#053; }
+
+    .meta { font-size:12px; color:#666; margin-bottom:6px; }
+    .orig { font-weight:600; color:#0b2540; }
+    .trans { margin-top:6px; color:#0b60ff; font-size:13px; }
+    .time { display:block; font-size:11px; color:#8a8f98; margin-top:6px; }
+
+    .composer {
+      display:flex; gap:8px; align-items:center; margin-top:12px;
+    }
+    .composer input[type="text"] {
+      flex:1;
+      padding:12px 14px;
+      border-radius:999px;
+      border:1px solid #e6e7ea;
+      font-size:14px;
+    }
+    .composer button {
+      padding:10px 16px;
+      border-radius:999px;
+      border:none;
+      background:#1aa3ff;
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    @media (max-width:880px) {
+      .app { grid-template-columns:1fr; height:auto; padding:12px; }
+      .sidebar { order:2; }
+      .chat { order:1; height:auto; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="sidebar">
+      <div class="brand">
+        <div class="logo">RT</div>
+        <div>
+          <h2>Real-time Chat</h2>
+          <div style="font-size:12px;color:#666">Live translate • Demo</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <input id="name" placeholder="Your name" value="User" />
+        <select id="targetLang">
+          <option value="">No translation</option>
+          <option value="en">English</option>
+          <option value="hi">Hindi</option>
+          <option value="ur">Urdu</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="ar">Arabic</option>
+          <option value="de">German</option>
+          <option value="bn">Bengali</option>
+          <option value="ta">Tamil</option>
+        </select>
+      </div>
+
+      <div class="rooms">
+        <div class="room">
+          <div class="av">A</div>
+          <div class="meta"><strong>General</strong><br><span style="font-size:12px;color:#888">Group chat - demo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat">
+      <div class="chat-header">
+        <div class="chat-title">General • Real-time Translate</div>
+        <div style="font-size:13px;color:#666">Connected</div>
+      </div>
+
+      <div id="messages" class="chat-window"></div>
+
+      <div class="composer">
+        <input id="text" type="text" placeholder="Type a message and press Enter" />
+        <button id="send">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- socket.io -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+  <script>
+    // IMPORTANT — FIXED URL (port added)
+    const socket = io("http://16.170.237.72:3000");
+
+    const messagesEl = document.getElementById('messages');
+    const nameInput = document.getElementById('name');
+    const textInput = document.getElementById('text');
+    const sendBtn = document.getElementById('send');
+    const targetLang = document.getElementById('targetLang');
+
+    function renderMessage(m) {
+      const me = (m.from || '').toLowerCase() === (nameInput.value || 'User').toLowerCase();
+      const wrap = document.createElement('div');
+      wrap.className = 'msg' + (me ? ' me' : '');
+
+      const av = document.createElement('div');
+      av.className = 'av';
+      av.textContent = (m.from || 'U')[0].toUpperCase();
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+
+      bubble.innerHTML = `
+        <div class="meta"><strong>${m.from}</strong> • ${new Date(m.timestamp).toLocaleString()}</div>
+        <div class="orig">${m.text}</div>
+        ${m.targetLang ? `<div class="trans">Translated: ${m.translated}</div>` : ''}
+      `;
+
+      wrap.appendChild(av);
+      wrap.appendChild(bubble);
+      messagesEl.appendChild(wrap);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    socket.on("connect", () => console.log("Connected"));
+    socket.on("init", msgs => msgs.forEach(renderMessage));
+    socket.on("new_message", msg => renderMessage(msg));
+
+    function sendMessage() {
+      const payload = {
+        from: nameInput.value || "User",
+        text: textInput.value.trim(),
+        targetLang: targetLang.value
+      };
+      if (!payload.text) return;
+      socket.emit("send_message", payload);
+      textInput.value = "";
+    }
+
+    sendBtn.onclick = sendMessage;
+    textInput.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+  </script>
+
+</body>
+</html>
