@@ -48,7 +48,12 @@ The Real-Time Multilingual Chat Translator is a cloud-based web application that
 
 ---
 
-## 🔹 How to Run the Project
+## 🚀 Live Demo
+
+👉 Click here to run the project:  
+http://realtime-chat-frontend-faisal.s3-website-eu-north-1.amazonaws.com
+http://16.170.237.72:3000
+
 
 ### Backend Setup
 ```bash
